@@ -1,5 +1,5 @@
-# Binaries
-helm-blame
+# Binaries (root level only, not cmd/helm-blame/)
+/helm-blame
 *.exe
 *.dll
 *.so
