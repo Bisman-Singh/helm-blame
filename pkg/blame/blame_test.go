@@ -154,6 +154,84 @@ func TestAnalyzeNoShadowWhenOnlyOneSource(t *testing.T) {
 	}
 }
 
+func TestAnalyzeNullDeletesChildren(t *testing.T) {
+	layers := []Layer{
+		{
+			Values: map[string]interface{}{
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"cpu":    "500m",
+						"memory": "128Mi",
+					},
+				},
+			},
+			Source: Source{Type: SourceParentDefault, Path: "values.yaml", Priority: 1},
+		},
+		{
+			Values:  map[string]interface{}{"resources": nil},
+			Source: Source{Type: SourceValueFile, Path: "override.yaml", Priority: 100},
+		},
+	}
+
+	result := Analyze("test", layers)
+
+	for _, e := range result.Entries {
+		if e.Key == "resources.limits.cpu" || e.Key == "resources.limits.memory" {
+			t.Errorf("child key %s should be pruned when parent is null", e.Key)
+		}
+	}
+
+	found := false
+	for _, e := range result.Entries {
+		if e.Key == "resources" && e.Value == nil {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected resources: nil entry")
+	}
+}
+
+func TestAnalyzeListReplacement(t *testing.T) {
+	layers := []Layer{
+		{
+			Values: map[string]interface{}{
+				"hosts": []interface{}{
+					map[string]interface{}{"name": "foo.com"},
+					map[string]interface{}{"name": "bar.com"},
+				},
+			},
+			Source: Source{Type: SourceParentDefault, Path: "values.yaml", Priority: 1},
+		},
+		{
+			Values: map[string]interface{}{
+				"hosts": []interface{}{
+					map[string]interface{}{"name": "prod.com"},
+				},
+			},
+			Source: Source{Type: SourceValueFile, Path: "prod.yaml", Priority: 100},
+		},
+	}
+
+	result := Analyze("test", layers)
+
+	for _, e := range result.Entries {
+		if e.Key == "hosts[1].name" {
+			t.Error("hosts[1] should be pruned when override replaces the list")
+		}
+	}
+
+	found := false
+	for _, e := range result.Entries {
+		if e.Key == "hosts[0].name" && e.Value == "prod.com" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected hosts[0].name = prod.com from override")
+	}
+}
+
 func TestAnalyzeSorted(t *testing.T) {
 	layers := []Layer{
 		{

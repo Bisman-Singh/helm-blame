@@ -1,6 +1,9 @@
 package blame
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 // Layer represents a single source of values with its provenance metadata.
 type Layer struct {
@@ -29,6 +32,8 @@ func Analyze(chartName string, layers []Layer) BlameResult {
 	}
 
 	entries := buildEntries(keyHistory)
+	entries = pruneNulledChildren(entries)
+	entries = pruneReplacedListItems(entries, layers)
 
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Key < entries[j].Key
@@ -81,4 +86,95 @@ func buildEntries(history map[string][]sourceEntry) []BlameEntry {
 	}
 
 	return entries
+}
+
+// pruneNulledChildren removes child keys when a parent key's winning
+// value is nil. In Helm, setting a key to null deletes the entire subtree.
+func pruneNulledChildren(entries []BlameEntry) []BlameEntry {
+	// Collect all keys with nil winning values
+	nullKeys := make(map[string]bool)
+	for _, e := range entries {
+		if e.Value == nil {
+			nullKeys[e.Key] = true
+		}
+	}
+
+	if len(nullKeys) == 0 {
+		return entries
+	}
+
+	var result []BlameEntry
+	for _, e := range entries {
+		pruned := false
+		for nullKey := range nullKeys {
+			// If this entry is a child of a nulled key, skip it
+			if e.Key != nullKey && strings.HasPrefix(e.Key, nullKey+".") {
+				pruned = true
+				break
+			}
+		}
+		if !pruned {
+			result = append(result, e)
+		}
+	}
+	return result
+}
+
+// pruneReplacedListItems removes list elements from lower-priority layers
+// when a higher-priority layer replaces the entire list. In Helm, lists
+// are replaced entirely, not merged element-by-element.
+func pruneReplacedListItems(entries []BlameEntry, layers []Layer) []BlameEntry {
+	// Find list prefixes that appear in multiple layers
+	// A list is identified by keys containing [N]
+	type listInfo struct {
+		prefix   string
+		maxIndex int
+		source   Source
+	}
+
+	// For each list prefix, find the highest-priority layer that defines it
+	listWinners := make(map[string]listInfo)
+	for _, layer := range layers {
+		flat := FlattenValues(layer.Values)
+		for _, kv := range flat {
+			// Find the list prefix (everything before [N])
+			bracketIdx := strings.Index(kv.Key, "[")
+			if bracketIdx < 0 {
+				continue
+			}
+			prefix := kv.Key[:bracketIdx]
+
+			existing, ok := listWinners[prefix]
+			if !ok || layer.Source.Priority > existing.source.Priority {
+				listWinners[prefix] = listInfo{
+					prefix: prefix,
+					source: layer.Source,
+				}
+			}
+		}
+	}
+
+	if len(listWinners) == 0 {
+		return entries
+	}
+
+	var result []BlameEntry
+	for _, e := range entries {
+		bracketIdx := strings.Index(e.Key, "[")
+		if bracketIdx < 0 {
+			result = append(result, e)
+			continue
+		}
+		prefix := e.Key[:bracketIdx]
+		winner, ok := listWinners[prefix]
+		if !ok {
+			result = append(result, e)
+			continue
+		}
+		// Keep only entries from the winning source
+		if e.Source.Priority == winner.source.Priority && e.Source.Path == winner.source.Path {
+			result = append(result, e)
+		}
+	}
+	return result
 }

@@ -177,6 +177,34 @@ func TestBuildNestedMap(t *testing.T) {
 	}
 }
 
+func TestParseSetValueList(t *testing.T) {
+	result := parseSetValue("{a,b,c}")
+	list, ok := result.([]interface{})
+	if !ok {
+		t.Fatal("expected list")
+	}
+	if len(list) != 3 {
+		t.Fatalf("expected 3 items, got %d", len(list))
+	}
+	if list[0] != "a" || list[1] != "b" || list[2] != "c" {
+		t.Errorf("expected [a,b,c], got %v", list)
+	}
+}
+
+func TestParseSetValueNull(t *testing.T) {
+	result := parseSetValue("null")
+	if result != nil {
+		t.Errorf("expected nil, got %v", result)
+	}
+}
+
+func TestParseSetValueString(t *testing.T) {
+	result := parseSetValue("hello")
+	if result != "hello" {
+		t.Errorf("expected hello, got %v", result)
+	}
+}
+
 func TestLoadChartNoSubcharts(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "Chart.yaml"), `name: simple`)

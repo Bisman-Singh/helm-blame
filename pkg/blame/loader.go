@@ -172,6 +172,26 @@ func parseSetFlag(s string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
+// parseSetValue converts a --set value string to the appropriate Go type.
+// Handles: {a,b,c} → []interface{}{"a","b","c"}, null → nil, booleans, numbers.
+func parseSetValue(raw string) interface{} {
+	// {a,b,c} → list
+	if strings.HasPrefix(raw, "{") && strings.HasSuffix(raw, "}") {
+		inner := raw[1 : len(raw)-1]
+		parts := strings.Split(inner, ",")
+		result := make([]interface{}, len(parts))
+		for i, p := range parts {
+			result[i] = strings.TrimSpace(p)
+		}
+		return result
+	}
+	// null → nil
+	if raw == "null" {
+		return nil
+	}
+	return raw
+}
+
 // buildNestedMap creates a nested map from a dot-separated key path.
 // Example: "image.tag" with value "1.25" → {"image": {"tag": "1.25"}}
 func buildNestedMap(key string, value string) map[string]interface{} {
@@ -179,9 +199,10 @@ func buildNestedMap(key string, value string) map[string]interface{} {
 	result := make(map[string]interface{})
 	current := result
 
+	parsed := parseSetValue(value)
 	for i, part := range parts {
 		if i == len(parts)-1 {
-			current[part] = value
+			current[part] = parsed
 		} else {
 			next := make(map[string]interface{})
 			current[part] = next
