@@ -39,6 +39,16 @@ changelog:
       - "^test:"
       - "^chore:"
 
+dockers_v2:
+  - images:
+      - "ghcr.io/bisman-singh/helm-blame"
+    tags:
+      - "v{{ .Version }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
 release:
   github:
     owner: Bisman-Singh
