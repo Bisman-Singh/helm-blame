@@ -1,0 +1,13 @@
+replicaCount: 3
+
+image:
+  tag: "1.25.3"
+
+ingress:
+  enabled: true
+  hostname: app.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi

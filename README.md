@@ -1,8 +1,15 @@
 # helm-blame
 
-Trace where every Helm value comes from.
+[![Release](https://img.shields.io/github/v/release/Bisman-Singh/helm-blame)](https://github.com/Bisman-Singh/helm-blame/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/Bisman-Singh/helm-blame)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build](https://img.shields.io/github/actions/workflow/status/Bisman-Singh/helm-blame/release.yaml)](https://github.com/Bisman-Singh/helm-blame/actions)
 
-For each leaf value in a chart's merged values tree, `helm blame` shows whether it came from a subchart default, the parent chart's `values.yaml`, an override file (`-f`), or a `--set` flag.
+`git blame` for your Helm values. Trace where every value came from across subchart defaults, parent values, `-f` files, and `--set` flags.
+
+For each leaf value in a chart's merged values tree, `helm blame` shows its source, and what it overrode.
+
+![demo](demo.gif)
 
 ```
 $ helm blame ./my-chart -f production.yaml --set replicaCount=5
@@ -52,6 +59,22 @@ git clone https://github.com/Bisman-Singh/helm-blame.git
 cd helm-blame
 make build
 ./bin/helm-blame --help
+```
+
+## Quick Start
+
+Clone the repo and try it against the included example charts:
+
+```bash
+git clone https://github.com/Bisman-Singh/helm-blame.git
+cd helm-blame
+make build
+
+# Simple chart with production overrides
+./bin/helm-blame examples/simple -f examples/simple/production.yaml --show-shadowed
+
+# Umbrella chart with subcharts, staging overrides, and a --set flag
+./bin/helm-blame examples/umbrella -f examples/umbrella/staging.yaml --set app.image.tag=v1.2.0 --show-shadowed
 ```
 
 ## Usage

@@ -1,0 +1,18 @@
+global:
+  environment: production
+
+app:
+  replicaCount: 2
+  image:
+    repository: myorg/api
+    tag: v1.0.0
+
+redis:
+  auth:
+    enabled: true
+    password: override-from-parent
+
+postgres:
+  auth:
+    username: appuser
+    database: mydb

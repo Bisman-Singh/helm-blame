@@ -1,0 +1,3 @@
+name: platform
+version: 2.0.0
+description: An umbrella chart example with subcharts for helm-blame

@@ -1,0 +1,7 @@
+app:
+  replicaCount: 1
+  image:
+    tag: v1.1.0-rc1
+
+redis:
+  maxmemory: 128mb

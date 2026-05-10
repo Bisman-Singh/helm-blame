@@ -1,0 +1,5 @@
+port: 6379
+maxmemory: 256mb
+auth:
+  enabled: false
+  password: ""
