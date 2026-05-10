@@ -30,6 +30,21 @@ Today that means opening every values file, mentally tracing the merge order, an
 helm plugin install https://github.com/Bisman-Singh/helm-blame
 ```
 
+> **Helm v4 users:** Helm v4 currently requires `--verify=false` for plugin installs from GitHub. This is a [known Helm v4 issue](https://github.com/helm/helm/issues/31490) affecting all plugins, not specific to helm-blame:
+> ```bash
+> helm plugin install https://github.com/Bisman-Singh/helm-blame --verify=false
+> ```
+
+Other install methods:
+
+```bash
+# Go install
+go install github.com/Bisman-Singh/helm-blame/cmd/helm-blame@latest
+
+# Docker
+docker run --rm ghcr.io/bisman-singh/helm-blame:latest --help
+```
+
 Or build from source:
 
 ```bash
@@ -111,6 +126,37 @@ Follows Helm's documented merge order (lowest to highest priority):
   ]
 }
 ```
+
+## Correctness
+
+helm-blame re-implements Helm's values merge logic by reading YAML files directly rather than depending on the Helm SDK. This keeps the binary small and the dependency tree minimal, but it means our merge behavior must match Helm's exactly.
+
+We've validated against three real-world charts:
+
+| Chart | Entries | Subcharts |
+|-------|---------|-----------|
+| bitnami/nginx | 196 | 0 |
+| kube-prometheus-stack | 1,493 | 5 |
+| gitlab/gitlab | 2,783 | 15 |
+
+Tested against Helm v4.0.4. If you find a value where helm-blame's provenance or final answer differs from what `helm template` produces, **that's a bug** — please [file an issue](https://github.com/Bisman-Singh/helm-blame/issues).
+
+## Known Limitations
+
+Edge cases we handle correctly:
+- Null values delete the entire subtree (children are pruned)
+- Lists are replaced entirely, not merged element-by-element
+- `--set tags={a,b,c}` is parsed as an array
+- `--set key=null` produces a nil value that deletes the subtree
+- Escaped dots in `--set` (`kubernetes\.io/os`) work
+
+Edge cases not yet handled:
+
+**Global value propagation.** Helm propagates `.Values.global.*` into every subchart automatically. helm-blame shows `global.domain` and `sub.global.domain` as separate keys rather than showing that the parent global overrides the subchart global. Planned for v0.2.
+
+**Subchart aliases.** Charts can define `dependencies[].alias` in Chart.yaml to rename a subchart. helm-blame doesn't resolve aliases — it uses the directory name. Planned for v0.3.
+
+**Conditional dependencies.** Charts can use `condition: foo.enabled` to skip a dependency entirely. helm-blame doesn't evaluate conditions — it always loads subchart values. Planned for v0.3.
 
 ## Roadmap
 
