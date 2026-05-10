@@ -181,13 +181,9 @@ Edge cases not yet handled:
 
 **Conditional dependencies.** Charts can use `condition: foo.enabled` to skip a dependency entirely. helm-blame doesn't evaluate conditions — it always loads subchart values. Planned for v0.3.
 
-## Roadmap
+## Scope
 
-- Cluster-aware mode: `helm blame <release> -n <namespace>` to trace values of a live release
-- Diff mode: compare local values chain against a running release
-- Pre-commit hook to block PRs with shadowed values
-- ArgoCD / Flux `valuesFrom` support
-- VS Code extension with inline hover
+helm-blame traces value provenance for local charts and values. This covers the most common debugging case: umbrella charts with multiple `-f` files and `--set` overrides.
 
 ## License
 
