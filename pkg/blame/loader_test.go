@@ -69,6 +69,14 @@ func TestLoadChartBasic(t *testing.T) {
 	if layers[1].Source.Type != SourceParentDefault {
 		t.Errorf("second layer should be parent default, got %s", layers[1].Source.Type)
 	}
+
+	// Subchart values should be namespaced under the subchart name
+	flat := FlattenValues(layers[0].Values)
+	for _, kv := range flat {
+		if kv.Key[:6] != "redis." {
+			t.Errorf("subchart key should be prefixed with redis., got %s", kv.Key)
+		}
+	}
 }
 
 func TestLoadChartWithValueFiles(t *testing.T) {

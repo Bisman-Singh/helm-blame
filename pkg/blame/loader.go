@@ -144,8 +144,14 @@ func loadSubchartDefaults(chartDir string) ([]Layer, error) {
 			return nil, err
 		}
 		if vals != nil {
+			// Namespace subchart values under the subchart name,
+			// matching how Helm merges parent values into subcharts.
+			// e.g., grafana subchart's "adminUser" becomes "grafana.adminUser"
+			namespacedVals := map[string]interface{}{
+				entry.Name(): vals,
+			}
 			layers = append(layers, Layer{
-				Values: vals,
+				Values: namespacedVals,
 				Source: Source{
 					Type:     SourceSubchartDefault,
 					Path:     fmt.Sprintf("charts/%s/values.yaml", entry.Name()),
