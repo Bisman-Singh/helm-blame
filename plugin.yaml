@@ -7,4 +7,5 @@ description: |-
   the parent chart's values.yaml, an override file (-f), or a --set flag.
 command: "$HELM_PLUGIN_DIR/bin/helm-blame"
 hooks:
-  install: "cd $HELM_PLUGIN_DIR && make build"
+  install: "bash $HELM_PLUGIN_DIR/scripts/install.sh"
+  update: "bash $HELM_PLUGIN_DIR/scripts/install.sh"
