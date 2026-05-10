@@ -1,0 +1,10 @@
+name: "blame"
+version: "0.1.0"
+usage: "trace where every Helm value comes from"
+description: |-
+  Shows the provenance of every value in a Helm chart's merged values tree.
+  For each leaf value, blame tells you whether it came from a subchart default,
+  the parent chart's values.yaml, an override file (-f), or a --set flag.
+command: "$HELM_PLUGIN_DIR/bin/helm-blame"
+hooks:
+  install: "cd $HELM_PLUGIN_DIR && make build"
